@@ -1,21 +1,10 @@
 import { difference, intersection, union } from "../day8/set.ts";
+import { DIRECTIONS, generateNeighbors } from "../utils/neighbors.ts";
 
 const day9Input = (await Deno.readTextFile("./day9-input"))
   .split("\n")
   .map((s) => s.split("").map(Number));
 
-const DIRECTIONS = [
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-  [0, -1],
-];
-
-const generateNeighbors = (input: number[][], colIdx: number, rowIdx: number) =>
-  DIRECTIONS.map(([row, col]) => [row + rowIdx, col + colIdx]).filter(
-    ([row, col]) =>
-      row >= 0 && row < input.length && col >= 0 && col < input[0].length
-  );
 const checkLocalLow = (
   input: number[][],
   colIdx: number,
