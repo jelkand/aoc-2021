@@ -51,23 +51,14 @@ const findPaths = (
 
   const result = Array.from(neighbors)
     .filter((neighbor) => ruleSet(neighbor, visited))
-    .map((n) =>
-      findPaths(
-        adjList,
-        {
-          ...visited,
-          [n]: visited[n] ? visited[n] + 1 : 1,
-        },
-        rules,
-        n,
-        end
-      )
-    )
-    .filter((path) => !!path.length)
-    .flat(1)
+    .flatMap((n) => {
+      const nextVisited = {
+        ...visited,
+        [n]: visited[n] ? visited[n] + 1 : 1,
+      };
+      return findPaths(adjList, nextVisited, rules, n, end);
+    })
     .map((path) => (Array.isArray(path) ? [start, ...path] : [start, path]));
-
-  // console.log({ result });
 
   return result;
 };
@@ -94,9 +85,6 @@ const day12Part2 = (input: string[][]) => {
   };
 
   const paths = findPaths(adjList, {}, rules, "start", "end");
-  // .map((path) => path.join(","))
-  // .sort();
-
   return paths.length;
 };
 
