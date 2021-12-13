@@ -38,7 +38,6 @@ const generateMatrix = (dots: number[][]) => {
 };
 
 const matrix = generateMatrix(dots);
-// console.log({matrix})
 
 const transposeMatrix = (matrix: number[][]) =>
   matrix[0].map((_, colIdx) => matrix.map((row) => row[colIdx]));
@@ -68,8 +67,6 @@ const day13Part1 = (matrix: number[][], folds: Fold[]) => {
     (acc, fold) => foldMatrix(acc, fold),
     matrix
   );
-  // console.table(reduced);
-
   return reduced.reduce(
     (acc, row) =>
       acc + row.reduce((count, val) => count + (val > 0 ? 1 : 0), 0),
