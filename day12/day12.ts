@@ -72,7 +72,9 @@ const day12Part1 = (input: string[][]) => {
   return paths.length;
 };
 
+console.time("part1");
 const part1Result = day12Part1(day12Input);
+console.timeEnd("part1");
 console.log({ part1Result });
 
 const day12Part2 = (input: string[][]) => {
@@ -88,5 +90,7 @@ const day12Part2 = (input: string[][]) => {
   return paths.length;
 };
 
+console.time("part2");
 const part2Result = day12Part2(day12Input);
+console.timeEnd("part2");
 console.log({ part2Result });
