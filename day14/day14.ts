@@ -55,7 +55,7 @@ const countRecursive = (
   return result;
 };
 
-const TICKS = 40;
+const TICKS = 1022;
 
 const day14 = (input: string[]) => {
   const windows = slidingWindows(input, 2);
@@ -67,9 +67,11 @@ const day14 = (input: string[]) => {
 
   result[windows[windows.length - 1][1]] += 1; // don't remove the final letter in the above dobule counting squad
   const sorted = Object.entries(result).sort((a, b) => a[1] - b[1]);
-
   return sorted[sorted.length - 1][1] - sorted[0][1];
 };
 
+console.time();
 const result = day14(initial);
+console.timeEnd();
+console.log(countCache["FS900"]);
 console.log({ result });

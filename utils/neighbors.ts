@@ -18,12 +18,22 @@ export const DIRECTIONS_DIAGONAL = [
 
 export const generateNeighbors = (
   input: number[][],
-  colIdx: number,
-  rowIdx: number
+  rowIdx: number,
+  colIdx: number
 ): number[][] =>
   DIRECTIONS.map(([row, col]) => [row + rowIdx, col + colIdx]).filter(
     ([row, col]) =>
       row >= 0 && row < input.length && col >= 0 && col < input[0].length
+  );
+
+export const generateNeighborsMax = (
+  maxRow: number,
+  maxCol: number,
+  rowIdx: number,
+  colIdx: number
+): number[][] =>
+  DIRECTIONS.map(([row, col]) => [row + rowIdx, col + colIdx]).filter(
+    ([row, col]) => row >= 0 && row < maxRow && col >= 0 && col < maxCol
   );
 
 export const generateDiagonalNeighbors = (
