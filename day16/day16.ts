@@ -1,6 +1,4 @@
-export const input = (await Deno.readTextFile("./sample-input")).split("");
-
-console.log({ input });
+export const input = await Deno.readTextFile("./day16-input");
 
 const hexToBinary = (input: string[]) =>
   input.reduce<number[]>(
@@ -16,59 +14,97 @@ const binaryToDecimal = (input: number[]) => parseInt(input.join(""), 2);
 type Packet = {
   version: number;
   type: number;
-  subpackets?: Packet[];
-  value?: number;
+  value: number;
   length?: number;
 };
+
+enum Operation {
+  Sum = 0,
+  Product = 1,
+  Min = 2,
+  Max = 3,
+  Value = 4,
+  GreaterThan = 5,
+  LessThan = 6,
+  EqualTo = 7,
+}
+
+type Operator = (packets: Packet[]) => number;
+
+const sumPackets = (packets: Packet[]) =>
+  packets.reduce((acc, { value }) => acc + value, 0);
+const multiplyPackets = (packets: Packet[]) =>
+  packets.reduce((acc, { value }) => acc * value, 1);
+const minPackets = (packets: Packet[]) =>
+  packets.reduce(
+    (acc, { value }) => Math.min(acc, value || Infinity),
+    Infinity
+  );
+const maxPackets = (packets: Packet[]) =>
+  packets.reduce((acc, { value }) => Math.max(acc, value), -Infinity);
+const gtPackets = (packets: Packet[]) =>
+  packets[0].value > packets[1].value ? 1 : 0;
+const ltPackets = (packets: Packet[]) =>
+  packets[0].value < packets[1].value ? 1 : 0;
+const eqPackets = (packets: Packet[]) =>
+  packets[0].value === packets[1].value ? 1 : 0;
 
 class PacketParser {
   packet: number[];
   cursor = 0;
   parsedPackets: Packet[] = [];
-  // cursorLimit = Infinity;
-  // packetLimit = Infinity;
   versionSum = 0;
 
-  constructor(rawPacket: string) {
-    this.packet = hexToBinary(rawPacket.split(""));
+  operationMap: Record<Operation, Operator> = {
+    [Operation.Sum]: sumPackets,
+    [Operation.Product]: multiplyPackets,
+    [Operation.Min]: minPackets,
+    [Operation.Max]: maxPackets,
+    [Operation.Value]: () => binaryToDecimal(this.parseLiteralPacket()),
+    [Operation.GreaterThan]: gtPackets,
+    [Operation.LessThan]: ltPackets,
+    [Operation.EqualTo]: eqPackets,
+  };
+
+  constructor(packet: number[]) {
+    this.packet = packet;
   }
 
   parse() {
-    while (this.packet.length) {
-      this.parsedPackets.push(this.parseNextPacket());
-    }
+    const nextPacket = this.parseNextPacket();
+    this.parsedPackets.push(nextPacket);
   }
 
   parseNextPacket(): Packet {
     const version = binaryToDecimal(
       this.packet.slice(this.cursor, (this.cursor += 3))
     );
+    this.versionSum += version;
     const type = binaryToDecimal(
       this.packet.slice(this.cursor, (this.cursor += 3))
     );
 
+    const operation = this.operationMap[type as Operation];
+
+    let subpackets;
+    let value;
     if (type === 4) {
-      return {
-        version,
-        type,
-        value: binaryToDecimal(parseLiteralPacket(this.packet)),
-      };
+      value = binaryToDecimal(this.parseLiteralPacket());
+    } else {
+      subpackets = this.parseSubpackets();
+      value = operation(subpackets);
     }
-
-    const subpackets = this.parseOperatorPacket();
-
-    console.log("class", { version, type });
 
     return {
       version,
       type,
-      subpackets,
+      value,
     };
   }
 
-  parseOperatorPacket(): Packet[] {
-    const lengthType = this.packet.shift();
-    // const packetSize = lengthType ? 11 : 15;
+  parseSubpackets(): Packet[] {
+    const lengthType = this.packet[this.cursor];
+    this.cursor += 1;
 
     const subpackets: Packet[] = [];
 
@@ -77,92 +113,35 @@ class PacketParser {
         this.packet.slice(this.cursor, (this.cursor += 15))
       );
       const limit = this.cursor + subPacketsSize;
-      while (this.cursor <= limit) {
+      while (this.cursor < limit) {
         subpackets.push(this.parseNextPacket());
       }
-      // this.spliceLimit = subPacketsSize;
     } else if (lengthType) {
       const subPacketsCount = binaryToDecimal(
         this.packet.slice(this.cursor, (this.cursor += 11))
       );
       for (let i = 0; i < subPacketsCount; i++) {
-        subpackets.push(this.parseNextPacket());
+        const nextPacket = this.parseNextPacket();
+        subpackets.push(nextPacket);
       }
-      // this.packetLimit = subPacketsCount;
     }
 
     return subpackets;
   }
 
-  parseLiteralPacket(packet: number[]): number[] {
-    const first = packet[this.cursor];
-    const digit = packet.slice(this.cursor, (this.cursor += 4));
+  parseLiteralPacket(): number[] {
+    const first = this.packet[this.cursor];
+    this.cursor += 1;
+    const digit = this.packet.slice(this.cursor, (this.cursor += 4));
     if (first === 0) {
       return digit;
     }
 
-    return [...digit, ...parseLiteralPacket(packet)];
+    return [...digit, ...this.parseLiteralPacket()];
   }
-
-  // resetLimits() {
-  //   this.spliceLimit = Infinity;
-  //   this.packetLimit = Infinity;
-  // }
 }
 
-const parseNextPacket = (packet: number[], maxPackets = Infinity): Packet[] => {
-  const version = binaryToDecimal(packet.splice(0, 3));
-  const type = binaryToDecimal(packet.splice(0, 3));
-
-  let subpackets: any = [];
-  let value = undefined;
-
-  if (type === 4) {
-    value = binaryToDecimal(parseLiteralPacket(packet));
-  } else {
-    subpackets = parseOperatorPacket(packet);
-  }
-  // console.log({ version, type });
-
-  return [
-    {
-      version,
-      type,
-      subpackets,
-      value,
-    },
-  ];
-};
-
-const parseOperatorPacket = (packet: number[]) => {
-  const lengthType = packet.shift();
-  // const packetSize = lengthType ? 11 : 15;
-
-  let subpackets: Packet[] = [];
-
-  if (lengthType === 0) {
-    const subPacketsSize = binaryToDecimal(packet.splice(0, 15));
-
-    subpackets = parseNextPacket(packet.splice(0, subPacketsSize));
-    // packet.reduce();
-  } else if (lengthType) {
-    const subPacketsCount = binaryToDecimal(packet.slice(0, 11));
-  }
-
-  // console.log({ nextPacketSize });
-};
-
-const parseLiteralPacket = (packet: number[]): number[] => {
-  const first = packet.shift();
-  const digit = packet.splice(0, 4);
-  if (first === 0) {
-    return digit;
-  }
-
-  return [...digit, ...parseLiteralPacket(packet)];
-};
-
-// parseNextPacket(hexToBinary("38006F45291200".split("")));
-
-const parser = new PacketParser("38006F45291200");
+const parser = new PacketParser(hexToBinary(input.split("")));
 parser.parse();
+
+console.log(parser.parsedPackets[0].value); // 12301926782560
